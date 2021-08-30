@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata: 
+  name: logstash-deployment
+  labels: 
+    app: logstash 
+
+
+spec: 
+ replicas: 2
+ selector: 
+   matchLabels:
+     app: logstash 
+ template:
+   metadata:
+     labels:
+       app: logstash
+        
+
+   spec:
+    containers:
+    - name: logstash
+      image: logstash:7.14.0
+      ports:
+      - containerPort: 9600
+      - containerPort: 5044
+      env: 
+      - name: xpack.monitoring.elasticsearch.hosts
+        valueFrom:
+          configMapKeyRef:
+            name: logstash-configmap
+            key: elasticsearch_url
+    volumes:
+    - name: config-volume
+      configMap:
+        name: logstash-configmap
+        items:
+          - key: logstash.yml
+            path: logstash.yml
+    - name: logstash-pipeline-volume
+      configMap:
+        name: logstash-configmap
+        items:
+          - key: logstash.conf
+            path: logstash.conf
+
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: logstash-service
+
+spec: 
+ selector: 
+   app: logstash
+ ports:
+ - name: some
+   port: 9600
+   targetPort: 9600
+ - name: one
+   port: 5044
+   targetPort: 5044
+
+
